@@ -1,15 +1,25 @@
+
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
+import "../pages/Dashboard.css";
 
 function Dashboard() {
-  const [stats, setStats] = useState({ total: 0, checkedIn: 0, pending: 0 });
+  const [stats, setStats] = useState({
+    total: 0,
+    checkedIn: 0,
+    pending: 0,
+  });
+
   const [participants, setParticipants] = useState([]);
   const [nextQr, setNextQr] = useState("");
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const fetchAttendance = async () => {
     try {
+      setLoading(true);
+
       const [statsResponse, participantsResponse] = await Promise.all([
         fetch("http://localhost:5000/api/attendance/stats"),
         fetch("http://localhost:5000/api/participants"),
@@ -29,36 +39,53 @@ function Dashboard() {
       setLastUpdated(new Date());
       setError("");
     } catch (err) {
-      setError("Unable to connect to the backend. Check that the server is running.");
+      setError(
+        "Unable to connect to the backend. Check that the server is running."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  // The API returns participants in registration order. Keep a defensive sort
-  // here so the first pending registration is always shown as next in line.
+  // First-come-first-served queue
   const pendingParticipants = useMemo(
-    () => participants
-      .filter((person) => !person.checkedIn)
-      .sort((a, b) => {
-        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return aTime - bTime;
-      }),
+    () =>
+      participants
+        .filter((person) => !person.checkedIn)
+        .sort((a, b) => {
+          const aTime = a.createdAt
+            ? new Date(a.createdAt).getTime()
+            : 0;
+
+          const bTime = b.createdAt
+            ? new Date(b.createdAt).getTime()
+            : 0;
+
+          return aTime - bTime;
+        }),
     [participants]
   );
 
   const nextParticipant = pendingParticipants[0] || null;
 
+  // Live attendance updates
   useEffect(() => {
     fetchAttendance();
+
     const interval = setInterval(fetchAttendance, 3000);
+
     return () => clearInterval(interval);
   }, []);
 
+  // Generate next student's QR code
   useEffect(() => {
     let cancelled = false;
+
     if (!nextParticipant?.qrCode) {
       setNextQr("");
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
 
     QRCode.toDataURL(nextParticipant.qrCode, {
@@ -73,91 +100,216 @@ function Dashboard() {
         if (!cancelled) setNextQr("");
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [nextParticipant?.qrCode]);
 
   return (
-    <main style={{ padding: "20px", maxWidth: "1100px", margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-        <div>
-          <h2>Organiser Attendance Dashboard</h2>
-          <p style={{ color: "#64748b", marginTop: "-8px" }}>Live registration and check-in overview</p>
-        </div>
-        <button onClick={fetchAttendance}>Refresh Attendance</button>
-      </div>
+    <main className="dashboard-page">
+      <div className="dashboard-container">
 
-      {error && <p role="alert" style={{ color: "#b91c1c" }}>{error}</p>}
-
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px", margin: "22px 0" }}>
-        {[
-          { label: "Total Participants", value: stats.total, color: "#0f172a" },
-          { label: "Checked In", value: stats.checkedIn, color: "#15803d" },
-          { label: "Awaiting Check-in", value: stats.pending, color: "#b45309" },
-        ].map((item) => (
-          <div key={item.label} style={{ padding: "18px", border: "1px solid #e2e8f0", borderRadius: "12px", background: "#fff" }}>
-            <p style={{ margin: 0, color: "#64748b" }}>{item.label}</p>
-            <h2 style={{ margin: "8px 0 0", color: item.color, fontSize: "28px" }}>{item.value}</h2>
+        {/* Header */}
+        <header className="dashboard-header">
+          <div>
+            <h1>GateKeeper</h1>
+            <p>Organiser Attendance Dashboard</p>
           </div>
-        ))}
-      </section>
 
-      <section style={{ margin: "24px 0", padding: "20px", border: "1px solid #cbd5e1", borderRadius: "14px", background: "#f8fafc" }}>
-        <h3 style={{ marginTop: 0 }}>Next student in the first-come queue</h3>
-        {nextParticipant ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
-            <div style={{ flex: "1 1 220px" }}>
-              <p style={{ margin: "4px 0" }}><strong>{nextParticipant.name}</strong></p>
-              <p style={{ margin: "4px 0" }}>USN: {nextParticipant.usn || "Not provided"}</p>
-              <p style={{ margin: "4px 0" }}>Email: {nextParticipant.email}</p>
-              <p style={{ margin: "10px 0 0", color: "#b45309" }}>Status: Pending — registered, but the QR code has not yet been scanned successfully.</p>
-              {nextParticipant.createdAt && (
-                <p style={{ color: "#64748b", fontSize: "13px" }}>Registered: {new Date(nextParticipant.createdAt).toLocaleString()}</p>
-              )}
-            </div>
-            <div style={{ background: "#fff", padding: "12px", borderRadius: "12px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-              {nextQr ? <img src={nextQr} alt={`QR code for ${nextParticipant.name}`} width="180" height="180" /> : <p>QR code unavailable</p>}
-              <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>Next student's registration QR</p>
-            </div>
+          <button
+            className="dashboard-refresh-button"
+            onClick={fetchAttendance}
+            disabled={loading}
+          >
+            {loading ? "Refreshing..." : "Refresh Attendance"}
+          </button>
+        </header>
+
+        {/* Dashboard heading */}
+        <section className="dashboard-heading">
+          <h2>Attendance Overview</h2>
+          <p>
+            Monitor registrations, student check-ins and attendance
+            in real time.
+          </p>
+        </section>
+
+        {error && (
+          <div className="dashboard-error" role="alert">
+            {error}
           </div>
-        ) : (
-          <p style={{ color: "#15803d" }}>Everyone has checked in. No student is waiting.</p>
         )}
-      </section>
 
-      <h3>Participant Attendance</h3>
-      <p style={{ color: "#64748b", fontSize: "13px" }}>
-        Pending means the student is registered but has not completed QR check-in. It is not a registration failure.
-      </p>
+        {/* Statistics */}
+        <section className="dashboard-stats">
+          <div className="dashboard-stat-card">
+            <p>Total Participants</p>
+            <h2>{stats.total}</h2>
+            <span>Registered students</span>
+          </div>
 
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "680px" }}>
-          <thead>
-            <tr style={{ background: "#f1f5f9", textAlign: "left" }}>
-              {["Name", "USN", "Email", "Status / reason", "Check-in Time"].map((heading) => (
-                <th key={heading} style={{ padding: "12px", borderBottom: "1px solid #cbd5e1" }}>{heading}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {participants.map((person) => (
-              <tr key={person._id}>
-                <td style={{ padding: "12px", borderBottom: "1px solid #e2e8f0" }}>{person.name}</td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #e2e8f0" }}>{person.usn || "—"}</td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #e2e8f0" }}>{person.email}</td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #e2e8f0", color: person.checkedIn ? "#15803d" : "#b45309" }}>
-                  {person.checkedIn ? "Checked In" : "Pending — awaiting QR scan"}
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #e2e8f0" }}>
-                  {person.checkInTime ? new Date(person.checkInTime).toLocaleString() : "Not checked in"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          <div className="dashboard-stat-card checked-stat">
+            <p>Checked In</p>
+            <h2>{stats.checkedIn}</h2>
+            <span>Successfully scanned QR codes</span>
+          </div>
+
+          <div className="dashboard-stat-card pending-stat">
+            <p>Awaiting Check-in</p>
+            <h2>{stats.pending}</h2>
+            <span>Students yet to check in</span>
+          </div>
+        </section>
+
+        {/* Next student */}
+        <section className="dashboard-table-card">
+          <div className="dashboard-table-heading">
+            <div>
+              <h3>Next Student in Queue</h3>
+              <p>First-come-first-served registration order</p>
+            </div>
+            <span className="participant-count">
+              {pendingParticipants.length} Waiting
+            </span>
+          </div>
+
+          {nextParticipant ? (
+            <div className="next-student-content">
+              <div className="next-student-details">
+                <h2>{nextParticipant.name}</h2>
+
+                <p>
+                  <strong>USN:</strong>{" "}
+                  {nextParticipant.usn || "Not provided"}
+                </p>
+
+                <p>
+                  <strong>Email:</strong>{" "}
+                  {nextParticipant.email}
+                </p>
+
+                <p>
+                  <strong>Status:</strong>{" "}
+                  <span className="status-pending-text">
+                    Pending - Awaiting QR scan
+                  </span>
+                </p>
+
+                {nextParticipant.createdAt && (
+                  <p>
+                    <strong>Registered:</strong>{" "}
+                    {new Date(
+                      nextParticipant.createdAt
+                    ).toLocaleString()}
+                  </p>
+                )}
+              </div>
+
+              <div className="next-student-qr">
+                {nextQr ? (
+                  <img
+                    src={nextQr}
+                    alt={`QR code for ${nextParticipant.name}`}
+                    width="180"
+                    height="180"
+                  />
+                ) : (
+                  <p>QR code unavailable</p>
+                )}
+
+                <span>Next Student's Registration QR</span>
+              </div>
+            </div>
+          ) : (
+            <div className="empty-attendance">
+              <h3>All students have checked in!</h3>
+              <p>No students are currently waiting.</p>
+            </div>
+          )}
+        </section>
+
+        {/* Participants table */}
+        <section className="dashboard-table-card">
+          <div className="dashboard-table-heading">
+            <div>
+              <h3>Participant Attendance</h3>
+              <p>
+                Pending means registered but not yet successfully
+                checked in using QR.
+              </p>
+            </div>
+
+            <span className="participant-count">
+              {participants.length} Participants
+            </span>
+          </div>
+
+          <div className="table-responsive">
+            <table className="attendance-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>USN</th>
+                  <th>Email</th>
+                  <th>Status / Reason</th>
+                  <th>Check-in Time</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {participants.map((person) => (
+                  <tr key={person._id}>
+                    <td className="participant-name">
+                      {person.name}
+                    </td>
+
+                    <td>
+                      {person.usn || "—"}
+                    </td>
+
+                    <td>{person.email}</td>
+
+                    <td>
+                      {person.checkedIn ? (
+                        <span className="attendance-status status-checked">
+                          Checked In
+                        </span>
+                      ) : (
+                        <span className="attendance-status status-pending">
+                          Pending
+                        </span>
+                      )}
+                    </td>
+
+                    <td>
+                      {person.checkInTime
+                        ? new Date(
+                            person.checkInTime
+                          ).toLocaleString()
+                        : "Not checked in"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {participants.length === 0 && !error && (
+            <div className="empty-attendance">
+              <h3>No participants yet</h3>
+              <p>Registered students will appear here.</p>
+            </div>
+          )}
+        </section>
+
+        <footer className="dashboard-footer">
+          {lastUpdated
+            ? `Last updated: ${lastUpdated.toLocaleTimeString()}`
+            : "Loading attendance data..."}
+          {" · "}Auto-refreshes every 3 seconds
+        </footer>
+
       </div>
-
-      {participants.length === 0 && !error && <p>No participants registered yet.</p>}
-      {lastUpdated && <p style={{ color: "#94a3b8", fontSize: "12px" }}>Last updated: {lastUpdated.toLocaleTimeString()}</p>}
     </main>
   );
 }

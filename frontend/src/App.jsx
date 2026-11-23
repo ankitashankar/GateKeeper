@@ -1,27 +1,52 @@
 
 import { useState } from "react";
+import Registration from "./pages/Registration";
 import QRScanner from "./components/QRScanner";
 import Dashboard from "./components/Dashboard";
+import "./App.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("scanner");
+  const [activeTab, setActiveTab] = useState("registration");
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h1>GateKeeper - Event Check-in System</h1>
+    <div className="app-shell">
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-        <button onClick={() => setActiveTab("scanner")}>
-          QR Scanner
-        </button>
+      <header className="app-header">
+        <div className="app-brand">
+          <h1>Gatekeeper</h1>
+          <p>Seamless Event Entry Starts Here</p>
+        </div>
 
-        <button onClick={() => setActiveTab("dashboard")}>
-          Organiser Dashboard
-        </button>
-      </div>
+        <nav className="app-navigation">
+          <button
+            className={activeTab === "registration" ? "active" : ""}
+            onClick={() => setActiveTab("registration")}
+          >
+            Registration
+          </button>
 
-      {activeTab === "scanner" && <QRScanner />}
-      {activeTab === "dashboard" && <Dashboard />}
+          <button
+            className={activeTab === "scanner" ? "active" : ""}
+            onClick={() => setActiveTab("scanner")}
+          >
+            QR Scanner
+          </button>
+
+          <button
+            className={activeTab === "dashboard" ? "active" : ""}
+            onClick={() => setActiveTab("dashboard")}
+          >
+            Organiser Dashboard
+          </button>
+        </nav>
+      </header>
+
+      <main className="app-content">
+        {activeTab === "registration" && <Registration />}
+        {activeTab === "scanner" && <QRScanner />}
+        {activeTab === "dashboard" && <Dashboard />}
+      </main>
+
     </div>
   );
 }
