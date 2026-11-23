@@ -12,7 +12,6 @@ const registrationRoutes = require("./routes/registration");
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -35,28 +34,39 @@ app.post("/api/verify", async (req, res) => {
       });
     }
 
-    const participant = await Participant.findOne({ qrCode });
+    // Atomic update prevents duplicate simultaneous check-ins
+    const participant = await Participant.findOneAndUpdate(
+      { qrCode: qrCode.trim(), checkedIn: false },
+      {
+        $set: {
+          checkedIn: true,
+          checkInTime: new Date()
+        }
+      },
+      { new: true }
+    );
 
-    if (!participant) {
+    if (participant) {
+      return res.status(200).json({
+        message: "Check-in successful!",
+        participant: participant.name
+      });
+    }
+
+    const existing = await Participant.findOne({
+      qrCode: qrCode.trim()
+    });
+
+    if (!existing) {
       return res.status(404).json({
         message: "Invalid QR Code. Participant not found."
       });
     }
 
-    if (participant.checkedIn) {
-      return res.status(409).json({
-        message: "Already checked in!"
-      });
-    }
-
-    participant.checkedIn = true;
-    participant.checkInTime = new Date();
-
-    await participant.save();
-
-    res.status(200).json({
-      message: "Check-in successful!",
-      participant: participant.name
+    return res.status(409).json({
+      message: "Already checked in!",
+      participant: existing.name,
+      checkInTime: existing.checkInTime
     });
 
   } catch (error) {
@@ -67,20 +77,20 @@ app.post("/api/verify", async (req, res) => {
   }
 });
 
-// Get attendance statistics
+// Attendance statistics
 app.get("/api/attendance/stats", async (req, res) => {
   try {
     const total = await Participant.countDocuments();
     const checkedIn = await Participant.countDocuments({
       checkedIn: true
     });
-    const pending = total - checkedIn;
 
     res.json({
       total,
       checkedIn,
-      pending
+      pending: total - checkedIn
     });
+
   } catch (error) {
     res.status(500).json({
       message: "Could not fetch attendance statistics"
@@ -92,10 +102,11 @@ app.get("/api/attendance/stats", async (req, res) => {
 app.get("/api/participants", async (req, res) => {
   try {
     const participants = await Participant.find()
-      .select("name email checkedIn checkInTime")
-      .sort({ name: 1 });
+      .select("name usn email qrCode checkedIn checkInTime createdAt")
+      .sort({ createdAt: 1, _id: 1 });
 
     res.json(participants);
+
   } catch (error) {
     res.status(500).json({
       message: "Could not fetch participants"
@@ -103,7 +114,7 @@ app.get("/api/participants", async (req, res) => {
   }
 });
 
-// Connect to MongoDB and start server
+// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connected Successfully!");
