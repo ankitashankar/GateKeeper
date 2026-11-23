@@ -1,15 +1,27 @@
 
+import { useState } from "react";
 import QRScanner from "./components/QRScanner";
+import Dashboard from "./components/Dashboard";
 
 function App() {
+  const [activeTab, setActiveTab] = useState("scanner");
+
   return (
-    <div>
-      <h1>Gatekeeper</h1>
-      <p>Event Attendance Management System</p>
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+      <h1>GateKeeper - Event Check-in System</h1>
 
-      <hr />
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+        <button onClick={() => setActiveTab("scanner")}>
+          QR Scanner
+        </button>
 
-      <QRScanner />
+        <button onClick={() => setActiveTab("dashboard")}>
+          Organiser Dashboard
+        </button>
+      </div>
+
+      {activeTab === "scanner" && <QRScanner />}
+      {activeTab === "dashboard" && <Dashboard />}
     </div>
   );
 }

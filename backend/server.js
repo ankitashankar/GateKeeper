@@ -63,6 +63,42 @@ app.post("/api/verify", async (req, res) => {
   }
 });
 
+// Get attendance statistics
+app.get("/api/attendance/stats", async (req, res) => {
+  try {
+    const total = await Participant.countDocuments();
+    const checkedIn = await Participant.countDocuments({
+      checkedIn: true,
+    });
+    const pending = total - checkedIn;
+
+    res.json({
+      total,
+      checkedIn,
+      pending,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Could not fetch attendance statistics",
+    });
+  }
+});
+
+// Get all participants
+app.get("/api/participants", async (req, res) => {
+  try {
+    const participants = await Participant.find()
+      .select("name email checkedIn checkInTime")
+      .sort({ name: 1 });
+
+    res.json(participants);
+  } catch (error) {
+    res.status(500).json({
+      message: "Could not fetch participants",
+    });
+  }
+});
+
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
