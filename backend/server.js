@@ -1,4 +1,3 @@
-
 const dns = require("dns");
 dns.setServers(["8.8.8.8"]);
 
@@ -84,12 +83,12 @@ app.get("/api/attendance/stats", async (req, res) => {
   }
 });
 
-// Get all participants
+// Get all participants in registration order for the first-come queue.
 app.get("/api/participants", async (req, res) => {
   try {
     const participants = await Participant.find()
-      .select("name email checkedIn checkInTime")
-      .sort({ name: 1 });
+      .select("name usn email qrCode checkedIn checkInTime createdAt")
+      .sort({ createdAt: 1, _id: 1 });
 
     res.json(participants);
   } catch (error) {
