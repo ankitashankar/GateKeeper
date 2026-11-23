@@ -1,3 +1,6 @@
+const dns = require("dns");
+dns.setServers(["8.8.8.8"]);
+
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -64,17 +67,52 @@ app.post("/api/verify", async (req, res) => {
   }
 });
 
-// Start backend server independently of MongoDB
-const PORT = process.env.PORT || 5000;
+// Get attendance statistics
+app.get("/api/attendance/stats", async (req, res) => {
+  try {
+    const total = await Participant.countDocuments();
+    const checkedIn = await Participant.countDocuments({
+      checkedIn: true
+    });
+    const pending = total - checkedIn;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    res.json({
+      total,
+      checkedIn,
+      pending
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Could not fetch attendance statistics"
+    });
+  }
 });
 
-// Connect to MongoDB
+// Get all participants
+app.get("/api/participants", async (req, res) => {
+  try {
+    const participants = await Participant.find()
+      .select("name email checkedIn checkInTime")
+      .sort({ name: 1 });
+
+    res.json(participants);
+  } catch (error) {
+    res.status(500).json({
+      message: "Could not fetch participants"
+    });
+  }
+});
+
+// Connect to MongoDB and start server
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connected Successfully!");
+
+    const PORT = process.env.PORT || 5000;
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
   })
   .catch(error => {
     console.error("MongoDB Connection Failed:", error.message);
