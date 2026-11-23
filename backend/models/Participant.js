@@ -4,6 +4,7 @@ const participantSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    trim: true,
   },
 
   usn: {
@@ -16,6 +17,18 @@ const participantSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
+    trim: true,
+    lowercase: true,
+  },
+
+  phone: {
+    type: String,
+    default: "",
+  },
+
+  eventName: {
+    type: String,
+    default: "",
   },
 
   qrCode: {
