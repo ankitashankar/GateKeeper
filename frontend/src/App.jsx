@@ -1,15 +1,9 @@
-
-import QRScanner from "./components/QRScanner";
+import Registration from "./pages/Registration";
 
 function App() {
   return (
     <div>
-      <h1>Gatekeeper</h1>
-      <p>Event Attendance Management System</p>
-
-      <hr />
-
-      <QRScanner />
+      <Registration />
     </div>
   );
 }

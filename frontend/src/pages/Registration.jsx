@@ -88,8 +88,27 @@ function Registration() {
 
         <h1>Gatekeeper</h1>
         <p className="subtitle">Event Registration Portal</p>
+        <div className="brand-content">
+          <h2>Seamless Event Entry Starts Here.</h2>
+
+          <p>
+            Register for your event, receive your unique QR code,
+            and enjoy a faster, hassle-free check-in experience.
+          </p>
+
+          <div className="brand-features">
+            <p>✓ Quick Student Registration</p>
+            <p>✓ Secure QR Code Generation</p>
+            <p>✓ Faster Event Check-in</p>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit}>
+
+          <div className="form-intro">
+            <h2>Create your account</h2>
+            <p>Enter your details to register for the event.</p>
+          </div>
 
           <div className="form-group">
             <label>Full Name</label>
