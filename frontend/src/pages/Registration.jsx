@@ -51,10 +51,11 @@ function Registration() {
       }
 
       const uniqueId = data.registrationId;
+      const qrValue = data.qrCode;
 
       // Generate QR code using the registration ID
-      const generatedQR = await QRCode.toDataURL(uniqueId);
-
+      const generatedQR = await QRCode.toDataURL(qrValue);
+      
       setQrCode(generatedQR);
       setRegistrationId(uniqueId);
       setSuccess("Registration completed successfully!");
@@ -68,8 +69,12 @@ function Registration() {
       });
 
     } catch (err) {
-      setError(err.message || "Something went wrong.");
-    } finally {
+        setError(
+          err.message === "Failed to fetch"
+            ? "Unable to connect to the server. Please try again later."
+            : err.message
+        );
+      } finally {
       setLoading(false);
     }
   };
@@ -151,11 +156,12 @@ function Registration() {
             <input
               type="tel"
               name="phone"
-              placeholder="Enter your phone number"
+              placeholder="Enter your 10-digit phone number"
               value={formData.phone}
               onChange={handleChange}
-              pattern="[0-9]{10}"
-              title="Enter a valid 10-digit phone number"
+              pattern="[6-9][0-9]{9}"
+              title="Enter a valid 10-digit Indian mobile number"
+              maxLength="10"
               required
             />
           </div>

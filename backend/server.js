@@ -1,7 +1,3 @@
-
-const dns = require("dns");
-dns.setServers(["8.8.8.8"]);
-
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -9,11 +5,16 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const Participant = require("./models/Participant");
+const registrationRoutes = require("./routes/registration");
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
+
+// Registration API
+app.use("/api/registration", registrationRoutes);
 
 // Test route
 app.get("/", (req, res) => {
@@ -63,18 +64,18 @@ app.post("/api/verify", async (req, res) => {
   }
 });
 
+// Start backend server independently of MongoDB
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
 // Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connected Successfully!");
-
-    const PORT = process.env.PORT || 5000;
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
   })
-  .catch((error) => {
+  .catch(error => {
     console.error("MongoDB Connection Failed:", error.message);
   });
