@@ -91,6 +91,8 @@
   font-size: 14px;
 }
 
+/* Attendance Statistics */
+
 .dashboard-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -140,6 +142,8 @@
 .pending-stat h2 {
   color: #d97706;
 }
+
+/* Participant Attendance Table */
 
 .dashboard-table-card {
   background: white;
@@ -225,6 +229,8 @@
   font-weight: 600;
 }
 
+/* Attendance Status */
+
 .attendance-status {
   display: inline-block;
   padding: 6px 10px;
@@ -244,10 +250,7 @@
   color: #b45309;
 }
 
-.status-pending-text {
-  color: #b45309;
-  font-weight: 600;
-}
+/* Empty Attendance */
 
 .empty-attendance {
   text-align: center;
@@ -266,6 +269,8 @@
   margin: 0;
 }
 
+/* Dashboard Footer */
+
 .dashboard-footer {
   color: #94a3b8;
   text-align: center;
@@ -273,51 +278,7 @@
   margin-top: 28px;
 }
 
-/* Next student QR section */
-.next-student-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.next-student-details {
-  flex: 1 1 220px;
-}
-
-.next-student-details h2 {
-  color: #0f172a;
-  font-size: 22px;
-  margin: 0 0 18px;
-}
-
-.next-student-details p {
-  color: #475569;
-  font-size: 14px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-
-.next-student-qr {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 14px;
-  text-align: center;
-}
-
-.next-student-qr img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-  margin: 0 auto 10px;
-}
-
-.next-student-qr span {
-  color: #64748b;
-  font-size: 12px;
-}
+/* Responsive Design */
 
 @media (max-width: 750px) {
   .dashboard-page {

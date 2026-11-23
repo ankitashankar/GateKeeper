@@ -1,6 +1,5 @@
 
-import { useEffect, useMemo, useState } from "react";
-import QRCode from "qrcode";
+import { useEffect, useState } from "react";
 import "../pages/Dashboard.css";
 
 function Dashboard() {
@@ -11,11 +10,11 @@ function Dashboard() {
   });
 
   const [participants, setParticipants] = useState([]);
-  const [nextQr, setNextQr] = useState("");
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Fetch attendance data from backend
   const fetchAttendance = async () => {
     try {
       setLoading(true);
@@ -47,28 +46,7 @@ function Dashboard() {
     }
   };
 
-  // First-come-first-served queue
-  const pendingParticipants = useMemo(
-    () =>
-      participants
-        .filter((person) => !person.checkedIn)
-        .sort((a, b) => {
-          const aTime = a.createdAt
-            ? new Date(a.createdAt).getTime()
-            : 0;
-
-          const bTime = b.createdAt
-            ? new Date(b.createdAt).getTime()
-            : 0;
-
-          return aTime - bTime;
-        }),
-    [participants]
-  );
-
-  const nextParticipant = pendingParticipants[0] || null;
-
-  // Live attendance updates
+  // Automatically refresh attendance every 3 seconds
   useEffect(() => {
     fetchAttendance();
 
@@ -76,34 +54,6 @@ function Dashboard() {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Generate next student's QR code
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!nextParticipant?.qrCode) {
-      setNextQr("");
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    QRCode.toDataURL(nextParticipant.qrCode, {
-      width: 220,
-      margin: 2,
-      errorCorrectionLevel: "M",
-    })
-      .then((url) => {
-        if (!cancelled) setNextQr(url);
-      })
-      .catch(() => {
-        if (!cancelled) setNextQr("");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [nextParticipant?.qrCode]);
 
   return (
     <main className="dashboard-page">
@@ -134,14 +84,16 @@ function Dashboard() {
           </p>
         </section>
 
+        {/* Error message */}
         {error && (
           <div className="dashboard-error" role="alert">
             {error}
           </div>
         )}
 
-        {/* Statistics */}
+        {/* Attendance Statistics */}
         <section className="dashboard-stats">
+
           <div className="dashboard-stat-card">
             <p>Total Participants</p>
             <h2>{stats.total}</h2>
@@ -159,77 +111,12 @@ function Dashboard() {
             <h2>{stats.pending}</h2>
             <span>Students yet to check in</span>
           </div>
+
         </section>
 
-        {/* Next student */}
+        {/* Participant Attendance Table */}
         <section className="dashboard-table-card">
-          <div className="dashboard-table-heading">
-            <div>
-              <h3>Next Student in Queue</h3>
-              <p>First-come-first-served registration order</p>
-            </div>
-            <span className="participant-count">
-              {pendingParticipants.length} Waiting
-            </span>
-          </div>
 
-          {nextParticipant ? (
-            <div className="next-student-content">
-              <div className="next-student-details">
-                <h2>{nextParticipant.name}</h2>
-
-                <p>
-                  <strong>USN:</strong>{" "}
-                  {nextParticipant.usn || "Not provided"}
-                </p>
-
-                <p>
-                  <strong>Email:</strong>{" "}
-                  {nextParticipant.email}
-                </p>
-
-                <p>
-                  <strong>Status:</strong>{" "}
-                  <span className="status-pending-text">
-                    Pending - Awaiting QR scan
-                  </span>
-                </p>
-
-                {nextParticipant.createdAt && (
-                  <p>
-                    <strong>Registered:</strong>{" "}
-                    {new Date(
-                      nextParticipant.createdAt
-                    ).toLocaleString()}
-                  </p>
-                )}
-              </div>
-
-              <div className="next-student-qr">
-                {nextQr ? (
-                  <img
-                    src={nextQr}
-                    alt={`QR code for ${nextParticipant.name}`}
-                    width="180"
-                    height="180"
-                  />
-                ) : (
-                  <p>QR code unavailable</p>
-                )}
-
-                <span>Next Student's Registration QR</span>
-              </div>
-            </div>
-          ) : (
-            <div className="empty-attendance">
-              <h3>All students have checked in!</h3>
-              <p>No students are currently waiting.</p>
-            </div>
-          )}
-        </section>
-
-        {/* Participants table */}
-        <section className="dashboard-table-card">
           <div className="dashboard-table-heading">
             <div>
               <h3>Participant Attendance</h3>
@@ -246,6 +133,7 @@ function Dashboard() {
 
           <div className="table-responsive">
             <table className="attendance-table">
+
               <thead>
                 <tr>
                   <th>Name</th>
@@ -259,6 +147,7 @@ function Dashboard() {
               <tbody>
                 {participants.map((person) => (
                   <tr key={person._id}>
+
                     <td className="participant-name">
                       {person.name}
                     </td>
@@ -267,7 +156,9 @@ function Dashboard() {
                       {person.usn || "—"}
                     </td>
 
-                    <td>{person.email}</td>
+                    <td>
+                      {person.email}
+                    </td>
 
                     <td>
                       {person.checkedIn ? (
@@ -288,24 +179,30 @@ function Dashboard() {
                           ).toLocaleString()
                         : "Not checked in"}
                     </td>
+
                   </tr>
                 ))}
               </tbody>
+
             </table>
           </div>
 
+          {/* Empty state */}
           {participants.length === 0 && !error && (
             <div className="empty-attendance">
               <h3>No participants yet</h3>
               <p>Registered students will appear here.</p>
             </div>
           )}
+
         </section>
 
+        {/* Footer */}
         <footer className="dashboard-footer">
           {lastUpdated
             ? `Last updated: ${lastUpdated.toLocaleTimeString()}`
             : "Loading attendance data..."}
+
           {" · "}Auto-refreshes every 3 seconds
         </footer>
 
