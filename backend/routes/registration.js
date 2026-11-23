@@ -7,7 +7,7 @@ const router = express.Router();
 // Student Registration API
 router.post("/register", async (req, res) => {
   try {
-    const { name, usn, email, phone, eventName } = req.body;
+    let { name, usn, email, phone, eventName } = req.body;
 
     // Validate required fields
     if (!name || !usn || !email || !phone || !eventName) {
@@ -16,13 +16,37 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    // Generate unique registration ID
-    const registrationId = `GK-${randomUUID()}`;
+    // Normalize input
+    name = name.trim();
+    usn = usn.trim().toUpperCase();
+    email = email.trim().toLowerCase();
+    phone = phone.trim();
+    eventName = eventName.trim();
+    // Validate USN format
+    const usnPattern = /^4NI\d{2}[A-Z]{2}\d{3}$/;
 
-    // Generate unique QR identifier
+    if (!usnPattern.test(usn)) {
+    return res.status(400).json({
+        message: "Invalid USN format. Example: 4NI24IS123"
+    });
+    }
+
+    // Check for existing registration
+    const existingParticipant = await Participant.findOne({
+      usn,
+      eventName
+    });
+
+    if (existingParticipant) {
+      return res.status(409).json({
+        message: "This student is already registered for this event."
+      });
+    }
+
+    // Generate unique identifiers
+    const registrationId = `GK-${randomUUID()}`;
     const qrCode = randomUUID();
 
-    // Create participant
     const participant = new Participant({
       registrationId,
       name,
@@ -35,7 +59,7 @@ router.post("/register", async (req, res) => {
 
     await participant.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Registration successful!",
       registrationId: participant.registrationId,
       qrCode: participant.qrCode
@@ -48,7 +72,9 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    res.status(500).json({
+    console.error("Registration error:", error);
+
+    return res.status(500).json({
       message: "Registration failed",
       error: error.message
     });

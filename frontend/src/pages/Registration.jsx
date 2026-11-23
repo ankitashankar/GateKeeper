@@ -132,9 +132,17 @@ function Registration() {
             <input
               type="text"
               name="usn"
-              placeholder="Enter your USN"
+              placeholder="Example: 4NI24IS020"
               value={formData.usn}
-              onChange={handleChange}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  usn: e.target.value.toUpperCase()
+                })
+              }
+              pattern="4NI[0-9]{2}[A-Z]{2}[0-9]{3}"
+              title="Enter a valid USN (Example: 4NI24IS020)"
+              maxLength="10"
               required
             />
           </div>

@@ -73,28 +73,33 @@ body {
 
 /* BRANDING */
 
-.registration-card h1 {
+.registration-card > h1 {
   position: absolute;
-  top: 55px;
+  top: 45px;
   left: 45px;
-  z-index: 2;
+  z-index: 3;
   color: white;
   font-size: 32px;
   font-weight: 800;
-  letter-spacing: -1.5px;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin: 0;
 }
 
-.subtitle {
+.registration-card > .subtitle {
   position: absolute;
-  top: 105px;
+  top: 88px;
   left: 45px;
-  z-index: 2;
+  z-index: 3;
   color: #bfdbfe;
   font-size: 13px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   font-weight: 600;
+  line-height: 1.5;
+  margin: 0;
 }
+
 
 /* FORM */
 
